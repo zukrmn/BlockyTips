@@ -18,6 +18,7 @@ public class BlockyTips extends JavaPlugin {
     private int tipIndex = 0;
     private Set<String> tipsOff = ConcurrentHashMap.newKeySet();
     private File tipsOffFile;
+    private final int CHAT_WRAP = 80; // máximo por linha
 
     @Override
     public void onEnable() {
@@ -50,7 +51,6 @@ public class BlockyTips extends JavaPlugin {
             getServer().getLogger().severe("Erro ao carregar tips.properties: " + e.getMessage());
         }
 
-        // Carregar dicas
         tips.clear();
         for (int i = 1; ; i++) {
             String tip = config.getProperty("tip." + i);
@@ -75,7 +75,7 @@ public class BlockyTips extends JavaPlugin {
             }, interval * 20L, interval * 20L);
             getServer().getLogger().info("Agendamento das dicas iniciado (intervalo: " + interval + " segundos).");
         } else {
-            getServer().getLogger().warning("Dicas nao agendadas pois nenhuma foi carregada.");
+            getServer().getLogger().warning("Dicas não agendadas pois nenhuma foi carregada.");
         }
     }
 
@@ -92,15 +92,38 @@ public class BlockyTips extends JavaPlugin {
         }
     }
 
+    // Quebra linhas do texto para o chat do Minecraft
+    private List<String> wrapText(String text, int maxLength) {
+        List<String> lines = new ArrayList<String>();
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        for (String word : words) {
+            if (line.length() + word.length() + 1 > maxLength) {
+                lines.add(line.toString());
+                line = new StringBuilder();
+            }
+            if (line.length() > 0) line.append(" ");
+            line.append(word);
+        }
+        if (line.length() > 0) {
+            lines.add(line.toString());
+        }
+        return lines;
+    }
+
     private void sendTip() {
         if (tips.isEmpty()) return;
         String tip = tips.get(tipIndex);
         tipIndex = (tipIndex + 1) % tips.size();
-        String extra = "§fUtilize §c/dicas off §fpara desabilitar as dicas.";
+        String extra = "§eUtilize §c/dicas off §epara desabilitar as dicas.";
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!tipsOff.contains(p.getName().toLowerCase())) {
-                p.sendMessage(tip);
-                p.sendMessage(extra);
+                for (String linha : wrapText(tip, CHAT_WRAP)) {
+                    p.sendMessage(linha);
+                }
+                for (String linha : wrapText(extra, CHAT_WRAP)) {
+                    p.sendMessage(linha);
+                }
             }
         }
     }
@@ -117,18 +140,18 @@ public class BlockyTips extends JavaPlugin {
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("off")) {
                 tipsOff.add(name);
-                player.sendMessage("§cVoce desativou as dicas automaticas.");
+                player.sendMessage("§eVocê desativou as dicas automáticas.");
                 saveTipsOff();
                 return true;
             }
             if (args[0].equalsIgnoreCase("on")) {
                 tipsOff.remove(name);
-                player.sendMessage("§aVoce ativou as dicas automaticas!");
+                player.sendMessage("§aVocê ativou as dicas automáticas!");
                 saveTipsOff();
                 return true;
             }
         }
-        player.sendMessage("§Use §b/dicas on§e para ativar ou §b/dicas off§e para desativar as dicas automaticas.");
+        player.sendMessage("§eUse §b/dicas on§e para ativar ou §b/dicas off§e para desativar as dicas automáticas.");
         return true;
     }
 
