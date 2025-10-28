@@ -18,7 +18,7 @@ public class BlockyTips extends JavaPlugin {
     private int tipIndex = 0;
     private Set<String> tipsOff = ConcurrentHashMap.newKeySet();
     private File tipsOffFile;
-    private final int CHAT_WRAP = 80; // máximo por linha
+    private final int CHAT_WRAP = 50;
 
     @Override
     public void onEnable() {
@@ -92,22 +92,34 @@ public class BlockyTips extends JavaPlugin {
         }
     }
 
-    // Quebra linhas do texto para o chat do Minecraft
-    private List<String> wrapText(String text, int maxLength) {
+    // Descobre o último código de cor "§x" na string
+    private String getLastColor(String text) {
+        String color = "";
+        for (int i = text.length() - 1; i >= 0; i--) {
+            if (text.charAt(i) == '§' && i + 1 < text.length()) {
+                color = text.substring(i, i+2);
+                break;
+            }
+        }
+        return color;
+    }
+
+    // Quebra linhas preservando cor do Minecraft
+    private List<String> wrapTextWithColor(String text, int maxLength, String baseColor) {
         List<String> lines = new ArrayList<String>();
         String[] words = text.split(" ");
         StringBuilder line = new StringBuilder();
+        String color = baseColor;
         for (String word : words) {
             if (line.length() + word.length() + 1 > maxLength) {
-                lines.add(line.toString());
+                lines.add(color + line.toString());
+                color = getLastColor(line.toString().isEmpty() ? baseColor : line.toString());
                 line = new StringBuilder();
             }
             if (line.length() > 0) line.append(" ");
             line.append(word);
         }
-        if (line.length() > 0) {
-            lines.add(line.toString());
-        }
+        if (line.length() > 0) lines.add(color + line.toString());
         return lines;
     }
 
@@ -115,13 +127,15 @@ public class BlockyTips extends JavaPlugin {
         if (tips.isEmpty()) return;
         String tip = tips.get(tipIndex);
         tipIndex = (tipIndex + 1) % tips.size();
-        String extra = "§eUtilize §c/dicas off §epara desabilitar as dicas.";
+        String extra = "§fUtilize §c/dicas off §fpara desabilitar as dicas.";
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!tipsOff.contains(p.getName().toLowerCase())) {
-                for (String linha : wrapText(tip, CHAT_WRAP)) {
+                String baseColor = getLastColor(tip.length() > 0 ? tip.substring(0,2) : "§e");
+                for (String linha : wrapTextWithColor(tip, CHAT_WRAP, baseColor.isEmpty() ? "§e" : baseColor)) {
                     p.sendMessage(linha);
                 }
-                for (String linha : wrapText(extra, CHAT_WRAP)) {
+                // Para o aviso, sempre amarelo
+                for (String linha : wrapTextWithColor(extra, CHAT_WRAP, "§e")) {
                     p.sendMessage(linha);
                 }
             }
