@@ -1,0 +1,14 @@
+name: BlockyTips
+main: com.blockycraft.blockytips.BlockyTips
+version: 1.0.0
+author: Bernardo Zukerman
+description: Envia dicas automáticas e configuráveis no chat do servidor Minecraft.
+commands:
+  dicas:
+    description: Ativa ou desativa as dicas automáticas para o jogador.
+    usage: /dicas <on|off>
+    aliases: [tips]
+permissions:
+  blockytips.toggle:
+    description: Permite usar /dicas para ativar/desativar dicas.
+    default: true
